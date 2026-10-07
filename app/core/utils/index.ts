@@ -622,6 +622,8 @@ export function splitIntoN(arr: any[], n: number) {
 export async function loadJsLib(key: string, url: string) {
   // @ts-ignore
   if (window[key]) return window[key]
+  // tongyun: 为 JS 库地址补齐应用 baseURL，避免子路径部署时资源 404
+  url = withAppBaseURL(url)
   return new Promise((resolve, reject) => {
     const script = document.createElement('script')
     // 判断是否是 .mjs 文件，如果是，则使用 type="module"

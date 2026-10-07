@@ -2,9 +2,13 @@
 import VueVirtualScroller from 'vue-virtual-scroller'
 import { ENV } from '@/core/config/env.ts'
 import { withAppBaseURL } from '@/core/utils/base-url'
+// tongyun: 引入自用部署配置开关
+import { TONGYUN_LOAD_UPSTREAM_ANALYTICS } from '@/tongyun/config'
 
 export default defineNuxtPlugin(async nuxtApp => {
+  // tongyun: 增加配置开关，自用部署默认不加载原作者第三方统计（51.la/百度等）
   if (
+    TONGYUN_LOAD_UPSTREAM_ANALYTICS &&
     !location.href.includes('localhost') &&
     !location.href.includes('192.168') &&
     !location.href.includes('172.16') &&
