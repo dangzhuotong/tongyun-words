@@ -36,12 +36,16 @@ import {
   usePracticeIdleTimer,
 } from '@/core/composables/practice-words/usePracticeIdleTimer.ts'
 import { createStudyTask } from '@/core/composables/practice-words/study-task.ts'
+// tongyun: smart study hooks
+import { createSmartTask, isSmartStudyActive } from '@/ai/smart-task'
 import PrevAndNextWord from '@/components/word/PrevAndNextWord.vue'
 import type { PracticeNotifier } from '@/core/composables/practice-words/practice-flow-types.ts'
 import { usePracticeWordSession } from '@/core/composables/practice-words/usePracticeWordSession.ts'
 
 const settingStore = useSettingStore()
 const runtimeStore = useRuntimeStore()
+// tongyun: smart study reactive flag
+const tongyunSmart = ref(false)
 const { toggleTheme } = useTheme()
 const router = useRouter()
 const route = useRoute()
@@ -227,6 +231,8 @@ async function reloadRemotePracticeSession(): Promise<boolean> {
 }
 
 onMounted(async () => {
+  // tongyun: smart study hook
+  tongyunSmart.value = isSmartStudyActive()
   //如果是从单词学习主页过来的，就直接使用；否则等待加载
   if (runtimeStore.routeData) {
     await initData(null, true)
@@ -292,7 +298,9 @@ async function initData(initVal?: TaskWords, init: boolean = false) {
       }
     }
     if (!d) {
-      initData(createStudyTask().taskWords)
+      // tongyun: smart study hook
+      const taskWords = isSmartStudyActive() ? (await createSmartTask()).taskWords : createStudyTask().taskWords
+      initData(taskWords)
       return
     }
     if (!session.applyPracticeCache(d)) {
@@ -463,7 +471,8 @@ async function repeat() {
 async function continueStudy() {
   const previousWord = word
   wordPersistence.clear()
-  const temp = session.createNextTask(isComplete)
+  // tongyun: smart study hook
+  const temp = isSmartStudyActive() ? (await createSmartTask()).taskWords : session.createNextTask(isComplete)
   if (!temp.new.length && !temp.review.length) {
     Toast.warning('当前没有可学习的单词')
     return
@@ -587,11 +596,13 @@ useEvents([
       <Panel>
         <template v-slot:title>
           <div class="center gap-1">
-            <span>{{ store.sdict.name }}</span>
+            <!-- tongyun: smart study panel title -->
+            <span>{{ tongyunSmart ? '智能混学' : store.sdict.name }}</span>
 
+            <!-- tongyun: smart study hides GroupList -->
             <GroupList
               @click="jumpToGroup"
-              v-if="taskWords.new.length && settingStore.wordPracticeMode !== WordPracticeMode.Shuffle"
+              v-if="taskWords.new.length && settingStore.wordPracticeMode !== WordPracticeMode.Shuffle && !tongyunSmart"
             />
             <BaseIcon
               v-if="taskWords.new.length"
