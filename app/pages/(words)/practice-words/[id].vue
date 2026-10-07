@@ -37,7 +37,7 @@ import {
 } from '@/core/composables/practice-words/usePracticeIdleTimer.ts'
 import { createStudyTask } from '@/core/composables/practice-words/study-task.ts'
 // tongyun: smart study hooks
-import { createSmartTask, isSmartStudyActive } from '@/ai/smart-task'
+import { createSmartTask, isSmartStudyActive, setSmartStudyActive } from '@/ai/smart-task'
 import PrevAndNextWord from '@/components/word/PrevAndNextWord.vue'
 import type { PracticeNotifier } from '@/core/composables/practice-words/practice-flow-types.ts'
 import { usePracticeWordSession } from '@/core/composables/practice-words/usePracticeWordSession.ts'
@@ -231,7 +231,8 @@ async function reloadRemotePracticeSession(): Promise<boolean> {
 }
 
 onMounted(async () => {
-  // tongyun: smart study hook
+  // tongyun: 从首页/词典页进入时按 routeData 设定混学标记（词典页等入口没有标记=普通学习）；刷新页面时沿用已存标记
+  if (runtimeStore.routeData) setSmartStudyActive((runtimeStore.routeData as any).tongyunSmart === true)
   tongyunSmart.value = isSmartStudyActive()
   //如果是从单词学习主页过来的，就直接使用；否则等待加载
   if (runtimeStore.routeData) {
