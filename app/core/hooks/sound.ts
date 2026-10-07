@@ -295,7 +295,7 @@ export function useTTsPlayAudio() {
 }
 
 export function usePlayAudio(url: string) {
-  void new Audio(url).play().catch(() => {})
+  void new Audio(withAppBaseURL(url)).play().catch(() => {}) // tongyun: 子路径部署补 baseURL（绝对地址原样返回）
 }
 
 export function getAudioFileUrl(name: string) {
