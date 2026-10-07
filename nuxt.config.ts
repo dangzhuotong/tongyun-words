@@ -58,7 +58,8 @@ export default defineNuxtConfig({
       htmlAttrs: {
         lang: 'zh-CN',
       },
-      link: [{ rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }],
+      // tongyun: 使用 withBaseURL 为 favicon 加上应用 baseURL，避免子路径部署时 404
+      link: [{ rel: 'icon', type: 'image/x-icon', href: withBaseURL('/favicon.ico', appBaseURL) }],
     },
   },
   // ssr: false,
@@ -87,6 +88,15 @@ export default defineNuxtConfig({
   },
   // 模块
   modules: ['@pinia/nuxt', '@unocss/nuxt', 'unplugin-icons/nuxt', '@vue-macros/nuxt', '@nuxtjs/i18n', '@nuxt/image'],
+  // tongyun: 配置静态站自定义图片 provider，为运行时图片补齐 baseURL 避免 404
+  image: {
+    provider: 'tongyunStatic',
+    providers: {
+      tongyunStatic: {
+        provider: '~/providers/tongyun-static.ts',
+      },
+    },
+  },
   macros: {
     betterDefine: false,
   },

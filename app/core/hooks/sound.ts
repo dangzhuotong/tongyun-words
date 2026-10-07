@@ -4,6 +4,8 @@ import { ref } from 'vue'
 
 import { ENV, PronunciationApi, SoundFileOptions } from '../config/env'
 import { Toast } from '@/base'
+// tongyun: 引入 withAppBaseURL 为音效资源拼接应用 baseURL
+import { withAppBaseURL } from '@/core/utils/base-url'
 
 /**
  * 获取当前浏览器的 OS+浏览器 组合 key，用于 ttsVoiceMap 的索引
@@ -58,7 +60,8 @@ export function useSound(audioSrcList?: string[], audioFileLength?: number) {
     if (audioFileLength2) audioLength.value = audioFileLength2
     audioList.value = []
     for (let i = 0; i < audioLength.value; i++) {
-      audioSrcList2.map(src => audioList.value.push(new Audio(ENV.RESOURCE_URL + src)))
+      // tongyun: 为音效资源路径补齐 baseURL，避免子路径部署时播放 404
+      audioSrcList2.map(src => audioList.value.push(new Audio(withAppBaseURL(ENV.RESOURCE_URL + src))))
     }
     index.value = 0
   }
@@ -292,7 +295,7 @@ export function useTTsPlayAudio() {
 }
 
 export function usePlayAudio(url: string) {
-  void new Audio(url).play().catch(() => {})
+  void new Audio(withAppBaseURL(url)).play().catch(() => {}) // tongyun: 子路径部署补 baseURL（绝对地址原样返回）
 }
 
 export function getAudioFileUrl(name: string) {

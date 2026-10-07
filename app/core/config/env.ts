@@ -88,11 +88,12 @@ export const TourConfig = {
   total: 4,
 }
 
+// tongyun: 去掉多余斜杠，因为 ENV.LIBS_URL 结尾已自带斜杠，避免生成 /libs//xxx 导致路径解析异常
 export const LIB_JS_URL = {
-  SHEPHERD: `${ENV.LIBS_URL}/Shepherd.14.5.1.mjs.js`,
-  SNAPDOM: `${ENV.LIBS_URL}/snapdom.min.js`,
-  JSZIP: `${ENV.LIBS_URL}/jszip.min.js`,
-  XLSX: `${ENV.LIBS_URL}/xlsx.full.min.js`,
+  SHEPHERD: `${ENV.LIBS_URL}Shepherd.14.5.1.mjs.js`,
+  SNAPDOM: `${ENV.LIBS_URL}snapdom.min.js`,
+  JSZIP: `${ENV.LIBS_URL}jszip.min.js`,
+  XLSX: `${ENV.LIBS_URL}xlsx.full.min.js`,
 }
 export const PronunciationApi = 'https://dict.youdao.com/dictvoice?audio='
 export const DefaultShortcutKeyMap = {
