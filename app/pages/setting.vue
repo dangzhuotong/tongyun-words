@@ -21,6 +21,8 @@ import { useExport } from '@/core/hooks/export'
 import Log from '@/components/setting/Log.vue'
 import About from '@/components/About.vue'
 import CommonSetting from '@/components/setting/CommonSetting.vue'
+// tongyun: 学习服务设置
+import LearnServiceSetting from '@/components/tongyun/LearnServiceSetting.vue'
 import FsrsSetting from '@/components/setting/FsrsSetting.vue'
 import ArticleSetting from '@/components/setting/ArticleSetting.vue'
 import WordSetting from '@/components/setting/WordSetting.vue'
@@ -621,6 +623,8 @@ function disable360() {
         </div>
         <div class="col-line"></div>
         <div class="flex-1 overflow-y-auto overflow-x-hidden pr-4 content">
+          <!-- tongyun: 学习服务设置 -->
+          <LearnServiceSetting v-if="tabIndex === 0" />
           <CommonSetting v-if="tabIndex === 0" />
           <FsrsSetting v-if="tabIndex === 1" />
           <WordSetting v-if="tabIndex === 2" />

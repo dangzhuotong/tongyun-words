@@ -1,0 +1,89 @@
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+import { BaseButton, BaseInput, Toast } from '@/base'
+import SettingItem from '@/components/setting/SettingItem.vue'
+import {
+  getLearnConfig,
+  saveLearnConfig,
+  clearLearnConfig,
+  learnHealth,
+} from '@/tongyun/learn-client'
+
+const url = ref('/learn/api/')
+const token = ref('')
+const testing = ref(false)
+
+onMounted(() => {
+  const cfg = getLearnConfig()
+  url.value = cfg.url || '/learn/api/'
+  token.value = cfg.token || ''
+})
+
+function onSave() {
+  saveLearnConfig({ url: url.value, token: token.value })
+  Toast.success('已保存')
+}
+
+async function onTest() {
+  testing.value = true
+  try {
+    const res = await learnHealth({ url: url.value, token: token.value })
+    const ver = res?.version || res?.prompt_ver
+    const msg = ver ? `连接正常（v${ver}）` : '连接正常'
+    Toast.success(msg)
+  } catch (err: any) {
+    Toast.error(err.message || '连接失败')
+  } finally {
+    testing.value = false
+  }
+}
+
+function onClear() {
+  clearLearnConfig()
+  url.value = '/learn/api/'
+  token.value = ''
+  Toast.success('已清除')
+}
+</script>
+
+<template>
+  <div class="learn-service-setting">
+    <SettingItem
+      title="学习服务（AI 讲解）"
+      desc="tongyun-learn 服务地址和令牌，只存在本浏览器 localStorage。默认同域 /learn/api/"
+    />
+    <div class="flex flex-col gap-3 max-w-xl my-2">
+      <div class="flex items-center gap-3">
+        <span class="w-20 shrink-0 text-sm opacity-80">服务地址</span>
+        <BaseInput
+          class="flex-1"
+          v-model="url"
+          placeholder="/learn/api/"
+          clearable
+        />
+      </div>
+      <div class="flex items-center gap-3">
+        <span class="w-20 shrink-0 text-sm opacity-80">令牌</span>
+        <BaseInput
+          class="flex-1"
+          v-model="token"
+          type="password"
+          placeholder="web 令牌"
+          clearable
+        />
+      </div>
+      <div class="flex gap-3 justify-end mt-1">
+        <BaseButton type="info" @click="onClear">清除</BaseButton>
+        <BaseButton type="info" :loading="testing" @click="onTest">测试连接</BaseButton>
+        <BaseButton type="primary" @click="onSave">保存</BaseButton>
+      </div>
+    </div>
+    <div class="line my-4"></div>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.line {
+  border-bottom: 1px solid var(--color-border, rgba(125, 125, 125, 0.2));
+}
+</style>

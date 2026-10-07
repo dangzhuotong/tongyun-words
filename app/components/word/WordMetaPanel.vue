@@ -17,6 +17,8 @@ import ClickableWord from '@/components/word/ClickableWord.vue'
 import { Toast, VolumeIcon } from '@/base'
 import { useI18n } from 'vue-i18n'
 import TranslationList from '@/components/word/TranslationList.vue'
+// tongyun: AI 记忆法
+import AiWordTips from '@/components/tongyun/AiWordTips.vue'
 import TypingSentence from '~/components/practice-sentences/TypingSentence.vue'
 import type { PracticeViewState } from '@/core/composables/practice-words/practice-flow-types.ts'
 import { useEventsByWatch } from '@/core/utils/eventBus.ts'
@@ -271,6 +273,8 @@ defineExpose({ startPracticeSentence, playSentence })
         </div>
       </template>
     </template>
+    <!-- tongyun: AI 记忆法 -->
+    <div v-opacity="showDetails"><div class="line-white my-2"></div><AiWordTips :word="word" /></div>
   </div>
 </template>
 
