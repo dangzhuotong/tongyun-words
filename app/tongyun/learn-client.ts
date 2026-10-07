@@ -175,6 +175,59 @@ export async function learnHealth(cfg?: Partial<LearnConfig>): Promise<any> {
   }
 }
 
+export type LearnCheckResult = 'ok' | 'bad_token' | 'unreachable'
+
+export async function learnCheckAuth(
+  cfg?: Partial<LearnConfig>
+): Promise<{ result: LearnCheckResult; status: number }> {
+  const fallback = getLearnConfig()
+  const activeUrl = (cfg?.url !== undefined ? cfg.url.trim() : fallback.url) || DEFAULT_URL
+  const activeToken = cfg?.token !== undefined ? cfg.token.trim() : fallback.token
+
+  if (!activeToken) {
+    return { result: 'bad_token', status: 0 }
+  }
+
+  const targetUrl = joinUrl(activeUrl, 'v1/ai/explain')
+  const controller = new AbortController()
+  const timeoutId = setTimeout(() => controller.abort(), 15000)
+
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${activeToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ kind: 'auth_check', input: {} }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    let data: any = null
+    try {
+      data = await res.json()
+    } catch {
+      return { result: 'unreachable', status: res.status }
+    }
+
+    if (res.status === 422 && data?.error?.code === 'validation_error') {
+      return { result: 'ok', status: 422 }
+    }
+    if (res.status === 429 && data?.error?.code === 'rate_limited') {
+      return { result: 'ok', status: 429 }
+    }
+    if ((res.status === 401 || res.status === 403) && data?.error && typeof data.error === 'object') {
+      return { result: 'bad_token', status: res.status }
+    }
+
+    return { result: 'unreachable', status: res.status }
+  } catch {
+    clearTimeout(timeoutId)
+    return { result: 'unreachable', status: 0 }
+  }
+}
+
 const explainCache = new Map<string, ExplainResponse<any>>()
 
 export async function aiExplain<T = WordMnemonic | SentenceGrammar>(

@@ -6,7 +6,7 @@ import {
   getLearnConfig,
   saveLearnConfig,
   clearLearnConfig,
-  learnHealth,
+  learnCheckAuth,
 } from '@/tongyun/learn-client'
 
 const url = ref('/learn/api/')
@@ -27,12 +27,16 @@ function onSave() {
 async function onTest() {
   testing.value = true
   try {
-    const res = await learnHealth({ url: url.value, token: token.value })
-    const ver = res?.version || res?.prompt_ver
-    const msg = ver ? `连接正常（v${ver}）` : '连接正常'
-    Toast.success(msg)
-  } catch (err: any) {
-    Toast.error(err.message || '连接失败')
+    const { result } = await learnCheckAuth({ url: url.value, token: token.value })
+    if (result === 'ok') {
+      Toast.success('连接正常')
+    } else if (result === 'bad_token') {
+      Toast.error('令牌不对')
+    } else {
+      Toast.error('连不上服务')
+    }
+  } catch {
+    Toast.error('连不上服务')
   } finally {
     testing.value = false
   }
