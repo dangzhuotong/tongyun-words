@@ -91,6 +91,11 @@ function onMouseLeave() {
           <IconFluentBookLetter20Regular />
           <span>{{ $t('articles') }}</span>
         </NuxtLink>
+        <!-- tongyun: 学习看板入口 -->
+        <NuxtLink to="/learn-board" class="row">
+          <IconFluentDataHistogram20Regular />
+          <span>学习看板</span>
+        </NuxtLink>
         <NuxtLink to="/feedback" class="row">
           <IconFluentCommentEdit20Regular />
           <span>{{ $t('feedback') }}</span>
@@ -131,6 +136,11 @@ function onMouseLeave() {
         <div class="nav-item" @click="router.push('/articles')" :class="{ active: route.path?.includes('/articles') }">
           <IconFluentBookLetter20Regular />
           <span>{{ $t('articles') }}</span>
+        </div>
+        <!-- tongyun: 学习看板入口 -->
+        <div class="nav-item" @click="router.push('/learn-board')" :class="{ active: route.path === '/learn-board' }">
+          <IconFluentDataHistogram20Regular />
+          <span>看板</span>
         </div>
         <div class="nav-item" @click="router.push('/setting')" :class="{ active: route.path === '/setting' }">
           <IconFluentSettings20Regular />

@@ -23,6 +23,20 @@
   <b>Learn English, one keystroke at a time; smarter memorization, more efficient learning - an open-source word and article practice tool</b>
 </p>
 
+<!-- tongyun: fork 说明 -->
+## 关于这个 fork（tongyun-words）
+
+基于 [TypeWords](https://github.com/zyronon/TypeWords) 的个人自用 fork，同样以 GPL-3.0 开源。在上游功能之外加了这些（改动处代码里都带 `tongyun:` 标记，方便以后合并上游）：
+
+- **子路径部署**：支持挂在 `/words/` 下，构建命令 `NUXT_APP_BASE_URL=/words/ npx nuxt generate`。
+- **智能混学**：跨词书按记忆曲线复习，再随机补新词，不分章节。
+- **AI 记忆法 / AI 讲解**：单词记忆法和文章句子讲解，调同域的学习服务 `/learn/api/v1/ai/explain`。学习服务地址和令牌在「设置 → 通用设置」顶部填写，只存在本浏览器 localStorage。
+- **学习看板**（`/learn-board`，部署后是 `/words/learn-board`）：手机优先的只读页面，按顺序显示今天学什么（待复查在前，新点标出会不会占今天的新开名额）、待复习数和前几张卡的正面、卡点、各科统计（掌握数、各状态数、30 天保持率）、按阶段折叠的知识地图（点开一个点能看到硬前置和软前置）。
+  - 复用设置里的同一份学习服务地址和令牌。没填令牌时只提示去设置，不发任何请求。
+  - 只调学习服务的 GET 接口：`/subjects`、`/subjects/{id}/map`、`/next`、`/review/due`、`/progress`、`/blockers`。每块单独加载、单独报错：令牌不对提示去设置改，连不上提示「连不上学习服务」；`/blockers` 还没上线（404）时显示「卡点记录即将接入」。
+  - 页面是 `ssr:false` 的纯客户端页面，静态产物里没有任何学习数据。
+- 默认关闭了原作者的第三方统计脚本（开关在 `app/tongyun/config.ts`）。
+
 ## Project Introduction
 
 <https://www.bilibili.com/video/BV1QwYv6eEAS>

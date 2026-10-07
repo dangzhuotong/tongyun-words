@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { BaseButton, BaseInput, Toast } from '@/base'
 import SettingItem from '@/components/setting/SettingItem.vue'
 import {
@@ -8,6 +9,8 @@ import {
   clearLearnConfig,
   learnCheckAuth,
 } from '@/tongyun/learn-client'
+
+const router = useRouter()
 
 const url = ref('/learn/api/')
 const token = ref('')
@@ -76,10 +79,20 @@ function onClear() {
           clearable
         />
       </div>
-      <div class="flex gap-3 justify-end mt-1">
-        <BaseButton type="info" @click="onClear">清除</BaseButton>
-        <BaseButton type="info" :loading="testing" @click="onTest">测试连接</BaseButton>
-        <BaseButton type="primary" @click="onSave">保存</BaseButton>
+      <div class="flex items-center justify-between gap-3 mt-1">
+        <!-- tongyun: 学习看板入口 -->
+        <button
+          type="button"
+          class="text-sm text-[var(--color-link)] hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center min-h-[44px]"
+          @click="router.push('/learn-board')"
+        >
+          打开学习看板
+        </button>
+        <div class="flex gap-3 justify-end">
+          <BaseButton type="info" @click="onClear">清除</BaseButton>
+          <BaseButton type="info" :loading="testing" @click="onTest">测试连接</BaseButton>
+          <BaseButton type="primary" @click="onSave">保存</BaseButton>
+        </div>
       </div>
     </div>
     <div class="line my-4"></div>
