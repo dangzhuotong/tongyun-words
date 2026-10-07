@@ -7,6 +7,8 @@ import Space from './Space.vue'
 import TypingWord from './TypingWord.vue'
 import ClickableEnglishText from '@/components/word/ClickableEnglishText.vue'
 import WordLookupPopover from '@/components/word/WordLookupPopover.vue'
+// tongyun: AI 讲解弹窗
+import AiSentencePanel from '@/components/tongyun/AiSentencePanel.vue'
 import { lookupWord } from '@/core/hooks/useWordLookup.ts'
 import { useBaseStore } from '@/core/stores/base'
 import { usePracticeStore } from '@/core/stores/practice'
@@ -665,17 +667,8 @@ function onContextMenu(e: MouseEvent, sentence: Sentence, i, j, w) {
           emit('play', { sentence: sentence, handle: true })
         },
       },
-      {
-        label: $t('grammar_analysis'),
-        onClick: () => {
-          navigator.clipboard.writeText(sentence.text).then(r => {
-            Toast.success($t('copied_open_grammar'))
-            setTimeout(() => {
-              window.open('https://enpuz.com/')
-            }, 1000)
-          })
-        },
-      },
+      // tongyun: AI 讲解 替换 enpuz 语法分析
+      { label: 'AI 讲解', onClick: () => openAiSentence(sentence, i) },
       {
         label: $t('youdao_translate'),
         children: [
@@ -696,6 +689,18 @@ function onContextMenu(e: MouseEvent, sentence: Sentence, i, j, w) {
       },
     ],
   })
+}
+
+// tongyun: AI 讲解弹窗状态
+let aiSentenceOpen = $ref(false)
+let aiSentenceText = $ref('')
+let aiSentenceContext = $ref('')
+
+function openAiSentence(sentence: Sentence, i: number) {
+  aiSentenceText = sentence.text
+  const paragraph = (props.article.sections?.[i] || []).map(s => s.text).join(' ')
+  aiSentenceContext = paragraph.slice(0, 2000)
+  aiSentenceOpen = true
 }
 
 onMounted(() => {
@@ -922,6 +927,8 @@ const currentPractice = inject('currentPractice', [])
       </div>
     </template>
     <WordLookupPopover />
+    <!-- tongyun: AI 讲解弹窗 -->
+    <AiSentencePanel v-model="aiSentenceOpen" :sentence="aiSentenceText" :context="aiSentenceContext" />
   </div>
 </template>
 
