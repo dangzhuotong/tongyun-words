@@ -261,10 +261,12 @@ async function loadDict() {
   let dictId = route.params.id
   if (dictId) {
     //先在自己的词典列表里面找，如果没有再在资源列表里面找
-    dict = store.word.bookList.find(v => v.id === dictId)
+    // tongyun: 路由 id 是字符串，词书 id 可能是数字
+    dict = store.word.bookList.find(v => String(v.id) === String(dictId))
     let r = await fetch(resourceWrap(DICT_LIST.WORD.ALL))
     let dict_list = await r.json()
-    if (!dict) dict = dict_list.flat().find(v => v.id === dictId) as Dict
+    // tongyun: 路由 id 是字符串，词书 id 可能是数字
+    if (!dict) dict = dict_list.flat().find(v => String(v.id) === String(dictId)) as Dict
     if (dict && dict.id) {
       //如果是不是自定义词典，就请求数据
       if (!dict.custom) dict = await _getDictDataByUrl(dict)
@@ -321,7 +323,8 @@ async function initData(initVal?: TaskWords, init: boolean = false) {
 
   // 初始化 Question
   let dictId: any = route.params.id
-  let d = store.word.bookList.find(v => v.id === dictId)
+  // tongyun: 路由 id 是字符串，词书 id 可能是数字
+  let d = store.word.bookList.find(v => String(v.id) === String(dictId))
   if (!d) d = store.sdict
   if (!d?.id) return router.push('/words')
   allWords = shuffle(d.words)
