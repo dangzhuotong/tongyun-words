@@ -33,6 +33,8 @@ import type { DictResource, Statistics } from '@/core/types/types.ts'
 import { onMounted, onUnmounted, watch } from 'vue'
 import { useRuntimeStore } from '@/core/stores/runtime.ts'
 import Book from '@/components/Book.vue'
+import SmartStudyCard from '@/components/tongyun/SmartStudyCard.vue' // tongyun:
+import { createSmartTask, isSmartStudyActive } from '@/ai/smart-task' // tongyun:
 import { getDefaultDict } from '@/core/types/func.ts'
 import PracticeSettingDialog from '@/components/word/PracticeSettingDialog.vue'
 import ChangeLastPracticeIndexDialog from '@/components/word/ChangeLastPracticeIndexDialog.vue'
@@ -255,7 +257,7 @@ async function init() {
   loading = false
 }
 
-async function startPractice(practiceMode: WordPracticeMode, resetCache: boolean = false): Promise<void> {
+async function startPractice(practiceMode: WordPracticeMode, resetCache: boolean = false, opts?: { smart?: boolean; taskWords?: any }): Promise<void> { // tongyun:
   if (unsupportedCacheVersion) {
     Toast.error('当前客户端无法读取这份练习缓存，请升级后再继续')
     return
@@ -269,6 +271,10 @@ async function startPractice(practiceMode: WordPracticeMode, resetCache: boolean
     }
   }
   if (resetCache) await resetCacheData()
+  // tongyun: 混学标记跟着本次练习走：显式入口按 opts，继续旧任务时沿用原标记；练习页按 routeData.tongyunSmart 落盘
+  const tongyunSmart = opts?.smart ?? (isSaveData && isSmartStudyActive())
+  ;(practiceData as any).tongyunSmart = tongyunSmart
+  if (opts?.taskWords) practiceData.taskWords = opts.taskWords // tongyun:
 
   if (shouldShowDialogPracticeMode.includes(practiceMode) && !isSaveData) {
     editingWordPracticeMode = practiceMode
@@ -309,6 +315,15 @@ function systemPractice() {
   const currentMode = settingStore.wordPracticeMode
   const isFree = currentMode === WordPracticeMode.Free
   startPractice(isFree ? WordPracticeMode.System : currentMode, isFree)
+}
+
+// tongyun:
+async function startSmartStudy() {
+  if (isSaveData && isSmartStudyActive()) return startPractice(WordPracticeMode.System, false, { smart: true })
+  if (!store.sdict.id) return Toast.warning('请先选择一本词典')
+  const r = await createSmartTask()
+  if (!r.taskWords.new.length && !r.taskWords.review.length) return Toast.warning('暂无可学的词')
+  await startPractice(WordPracticeMode.System, true, { smart: true, taskWords: r.taskWords })
 }
 
 let editingWordPracticeMode = $ref(0)
@@ -768,6 +783,9 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- tongyun: -->
+    <SmartStudyCard class="mt-4" :disabled="!store.sdict.id" :has-saved-task="isSaveData" @start="startSmartStudy" />
 
     <div class="card flex flex-col md:flex-row gap-4 xl:gap-20 p-4 md:p-6">
       <div class="flex-1 flex flex-col gap-3 min-w-0">

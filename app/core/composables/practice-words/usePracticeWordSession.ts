@@ -23,6 +23,8 @@ import { createPracticeWordNavigator } from './usePracticeWordNavigator.ts'
 import { usePracticeDisplayPolicy } from './usePracticeDisplayPolicy.ts'
 import type { PracticeNotifier } from './practice-flow-types.ts'
 import { createStudyTask } from './study-task.ts'
+// tongyun: smart study hook
+import { isSmartStudyActive } from '@/ai/smart-task'
 
 export interface PracticeWordSessionOptions {
   getPracticeData: () => PracticeData
@@ -251,6 +253,8 @@ export function usePracticeWordSession(options: PracticeWordSessionOptions) {
   }
 
   function updateCompletedDictProgress(ignoreScope: 'remaining' | 'all') {
+    // tongyun: smart study hook (混学不推进当前词书进度)
+    if (isSmartStudyActive()) return
     if (getPracticeMode() === WordPracticeMode.Shuffle) return
     store.sdict.lastLearnIndex += statStore.newWordNumber
     const ignoreList = [store.allIgnoreWords, store.knownWords][settingStore.ignoreSimpleWord ? 0 : 1]
@@ -284,6 +288,12 @@ export function usePracticeWordSession(options: PracticeWordSessionOptions) {
   function createRepeatTask(): TaskWords {
     const taskWords = cloneDeep(options.getTaskWords())
     const ignoreSet = [store.allIgnoreWordsSet, store.knownWordsSet][settingStore.ignoreSimpleWord ? 0 : 1]
+    // tongyun: smart study hook (过滤已忽略词后直接返回，不改 lastLearnIndex)
+    if (isSmartStudyActive()) {
+      taskWords.new = taskWords.new.filter(word => !ignoreSet.has(word.word))
+      taskWords.review = taskWords.review.filter(word => !ignoreSet.has(word.word))
+      return taskWords
+    }
     if (getPracticeMode() === WordPracticeMode.Shuffle) {
       taskWords.review = shuffle(taskWords.review.filter(word => !ignoreSet.has(word.word)))
     } else {
