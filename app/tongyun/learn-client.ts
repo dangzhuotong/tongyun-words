@@ -346,3 +346,176 @@ export async function aiExplain<T = WordMnemonic | SentenceGrammar>(
     throw new LearnError('network_error', `连不上学习服务（地址：${cfg.url}），可能还没部署`, 0)
   }
 }
+
+// tongyun: AI 错词复习卷（POST /v1/ai/quiz）
+
+export type QuizQuestionType = 'cloze' | 'choice' | 'en2zh'
+
+export interface QuizWordItem {
+  word: string
+  cn?: string | null
+}
+
+export interface QuizQuestion {
+  type: QuizQuestionType
+  word: string
+  stem: string
+  options: string[]
+  answer: string
+  explain: string
+}
+
+export interface QuizContent {
+  questions: QuizQuestion[]
+}
+
+export type QuizResponse = ExplainResponse<QuizContent>
+
+/** 从错词本词条挑出 quiz 入参：去重、截断、带首义 cn */
+export function pickWrongWordsForQuiz(
+  words: Array<{ word: string; trans?: Array<{ cn?: string }> }>,
+  limit = 20
+): QuizWordItem[] {
+  const out: QuizWordItem[] = []
+  const seen = new Set<string>()
+  const cap = Math.max(0, Math.min(20, limit))
+  for (const w of words || []) {
+    const word = (w?.word || '').trim()
+    if (!word) continue
+    const key = word.toLowerCase()
+    if (seen.has(key)) continue
+    seen.add(key)
+    const cn = w.trans?.[0]?.cn?.trim() || undefined
+    out.push(cn ? { word, cn } : { word })
+    if (out.length >= cap) break
+  }
+  return out
+}
+
+/** cloze / en2zh 本地判分：trim + 大小写不敏感全等 */
+export function gradeQuizAnswer(userInput: string, answer: string): boolean {
+  const a = (userInput || '').trim().toLowerCase()
+  const b = (answer || '').trim().toLowerCase()
+  if (!a || !b) return false
+  return a === b
+}
+
+export async function aiQuiz(
+  words: QuizWordItem[],
+  opts?: { signal?: AbortSignal }
+): Promise<QuizResponse> {
+  if (!isLearnConfigured()) {
+    throw new LearnError(
+      'not_configured',
+      '还没配置学习服务：到「设置 → 通用设置」填写学习服务地址和令牌',
+      0
+    )
+  }
+
+  const cleaned = pickWrongWordsForQuiz(
+    (words || []).map(w => ({
+      word: w.word,
+      trans: w.cn ? [{ cn: w.cn }] : [],
+    })),
+    20
+  )
+  if (cleaned.length === 0) {
+    throw new LearnError('validation_error', '请至少选 1 个错词再生成复习卷', 0)
+  }
+
+  const cfg = getLearnConfig()
+  const targetUrl = joinUrl(cfg.url, 'v1/ai/quiz')
+
+  const controller = new AbortController()
+  let userAborted = false
+  if (opts?.signal) {
+    if (opts.signal.aborted) {
+      controller.abort()
+      userAborted = true
+    } else {
+      opts.signal.addEventListener(
+        'abort',
+        () => {
+          userAborted = true
+          controller.abort()
+        },
+        { once: true }
+      )
+    }
+  }
+
+  let timedOut = false
+  const timeoutId = setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, 60000)
+
+  try {
+    const res = await fetch(targetUrl, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${cfg.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ words: cleaned }),
+      signal: controller.signal,
+    })
+    clearTimeout(timeoutId)
+
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new LearnError('not_found', `连不上学习服务（地址：${cfg.url}），可能还没部署`, 404)
+      }
+
+      let errorData: any = null
+      try {
+        errorData = await res.json()
+      } catch {
+        throw new LearnError('non_json', `连不上学习服务（地址：${cfg.url}），可能还没部署`, res.status)
+      }
+
+      const serverCode: string = errorData?.error?.code || ''
+      const serverMsg: string = errorData?.error?.message || ''
+
+      if (res.status === 401 || res.status === 403 || serverCode === 'unauthorized' || serverCode === 'forbidden') {
+        throw new LearnError(
+          serverCode || (res.status === 401 ? 'unauthorized' : 'forbidden'),
+          '令牌无效或无权限，请检查设置里的令牌',
+          res.status
+        )
+      }
+      if (serverCode === 'rate_limited' || (res.status === 429 && serverCode !== 'ai_daily_cap')) {
+        throw new LearnError('rate_limited', '请求太频繁，请稍后再试', 429)
+      }
+      if (serverCode === 'ai_daily_cap') {
+        throw new LearnError('ai_daily_cap', '今天的 AI 次数已用完', 429)
+      }
+      if (res.status === 502 || res.status === 503 || serverCode.startsWith('ai_')) {
+        const msg = serverMsg ? `服务暂时不可用：${serverMsg}` : '服务暂时不可用'
+        throw new LearnError(serverCode || `status_${res.status}`, msg, res.status)
+      }
+
+      const fallbackMsg = serverMsg ? `服务暂时不可用：${serverMsg}` : `服务暂时不可用（HTTP ${res.status}）`
+      throw new LearnError(serverCode || `error_${res.status}`, fallbackMsg, res.status)
+    }
+
+    let data: any
+    try {
+      data = await res.json()
+    } catch {
+      throw new LearnError('invalid_json', `连不上学习服务（地址：${cfg.url}），可能还没部署`, res.status)
+    }
+
+    return data as QuizResponse
+  } catch (err: any) {
+    clearTimeout(timeoutId)
+    if (err instanceof LearnError) throw err
+    if (userAborted) {
+      throw err
+    }
+    if (timedOut || err.name === 'AbortError') {
+      throw new LearnError('timeout', '请求学习服务超时（60s）', 0)
+    }
+    throw new LearnError('network_error', `连不上学习服务（地址：${cfg.url}），可能还没部署`, 0)
+  }
+}
