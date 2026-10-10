@@ -68,6 +68,7 @@ export default defineNuxtConfig({
     '/articles': { ssr: false },
     '/setting': { ssr: false },
     '/learn-board': { ssr: false }, // tongyun: 学习看板，纯客户端，静态产物不含数据
+    '/ai-quiz': { ssr: false }, // tongyun: AI 错词复习卷，纯客户端
     '/book/nce1': { prerender: true },
     '/book/nce2': { prerender: true },
     '/book/nce3': { prerender: true },

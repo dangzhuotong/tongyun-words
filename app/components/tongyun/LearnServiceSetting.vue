@@ -80,14 +80,23 @@ function onClear() {
         />
       </div>
       <div class="flex items-center justify-between gap-3 mt-1">
-        <!-- tongyun: 学习看板入口 -->
-        <button
-          type="button"
-          class="text-sm text-[var(--color-link)] hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center min-h-[44px]"
-          @click="router.push('/learn-board')"
-        >
-          打开学习看板
-        </button>
+        <!-- tongyun: 学习看板 / 错词复习卷入口 -->
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+          <button
+            type="button"
+            class="text-sm text-[var(--color-link)] hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center min-h-[44px]"
+            @click="router.push('/learn-board')"
+          >
+            打开学习看板
+          </button>
+          <button
+            type="button"
+            class="text-sm text-[var(--color-link)] hover:underline cursor-pointer bg-transparent border-none p-0 inline-flex items-center min-h-[44px]"
+            @click="router.push('/ai-quiz')"
+          >
+            AI 错词复习卷
+          </button>
+        </div>
         <div class="flex gap-3 justify-end">
           <BaseButton type="info" @click="onClear">清除</BaseButton>
           <BaseButton type="info" :loading="testing" @click="onTest">测试连接</BaseButton>
