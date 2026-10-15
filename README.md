@@ -39,6 +39,94 @@
 - 本机联调、探活命令和常见错误见 [docs/tongyun-learn-integration.md](docs/tongyun-learn-integration.md)。
 - 默认关闭了原作者的第三方统计脚本（开关在 `app/tongyun/config.ts`）。
 
+### 单词学习与智能混学使用指南（Words Usage & Fictional Walkthrough）
+
+智能混学（Smart Mix）打破传统章节刷词的机械模式，结合记忆曲线在复习旧词的同时自适应穿插新词，辅以沉浸式键盘打字与 AI 记忆法讲解。
+
+#### 虚构学习场景：学习者 Alex 的每日词汇流
+假设学习者 Alex 正在备考学术英语，词库中既有历史难词需要巩固，也有今日计划吸收的新词。
+
+1. **自适应队列构建**
+   - 进入练习时，算法根据记忆衰减度自动提取待复习词与新增词混合入队：
+     - **复习词（待巩固）**：`ephemeral`（短暂的）、`pervasive`（无处不在的）
+     - **新学词（今日新开）**：`resilient`（有弹性的，能迅速恢复的）
+2. **跟写与盲打沉浸交互**
+   - 界面呈现音标 `/ɪˈfemərəl/` 与发音提示。
+   - Alex 敲击键盘跟写字母；若输入拼写错误，系统播放错误音效并在原位等待修正，避免盲目跳过。
+3. **AI 助记讲解调取**
+   - 遇到难以记忆的生词时，点击「AI 讲解」（调用 `/learn/api/v1/ai/explain`）：
+     ```json
+     {
+       "kind": "word_mnemonic",
+       "content": {
+         "word": "ephemeral",
+         "phonetic": "/ɪˈfemərəl/",
+         "meanings": [{ "pos": "adj.", "cn": "短暂的；朝生暮死的" }],
+         "roots": [
+           { "part": "epi-", "type": "prefix", "meaning": "在...之上 / 持续" },
+           { "part": "hemera", "type": "root", "meaning": "天 / 一日" },
+           { "part": "-al", "type": "suffix", "meaning": "形容词后缀" }
+         ],
+         "mnemonic": "词根 hemera 代表「日」，epi- 表示「在...之上」，合起来指生命仅持续一天，引申为「短暂的」。",
+         "examples": [
+           {
+             "en": "The beauty of the cherry blossoms is dazzling yet ephemeral.",
+             "zh": "樱花之美令人目眩神迷，却又转瞬即逝。"
+           }
+         ]
+       }
+     }
+     ```
+4. **错词自动沉淀**
+   - 练习中多次拼写失误的生词（如 `pervasive`），会自动记录入本地 IndexedDB 错词本，作为错词复习卷的数据源。
+
+---
+
+### AI 错词复习卷使用指南（AI Quiz Usage & Fictional Walkthrough）
+
+错词复习卷（`/ai-quiz`，部署后为 `/words/ai-quiz`）直接连接本地错词本与学习服务 AI 生成接口（`POST /v1/ai/quiz`），提供完形填空、单项选择、英译中多题型测试与本地实时判分。
+
+#### 1. 操作流转
+- **选词阶段**：打开页面，系统从错词本自动加载最多 20 个候选词（默认全选，支持点选或一键反选）。
+- **生成试卷**：点击「生成复习卷」，客户端携带所选词汇请求服务端生成专属题目。
+- **本地判分**：纯客户端执行大小写不敏感匹配、空格清洗以及多释义（分号/逗号分隔）容错判定。
+
+#### 2. 虚构试卷题型样例
+
+假设 Alex 从错词本勾选了 3 个错词：`ubiquitous`、`pragmatic`、`serendipity`，生成的试卷样例如下：
+
+##### 题型一：完形填空（Cloze）
+- **题干**：`In the modern digital age, mobile phones have become ________, found in almost every corner of society.`
+- **正确答案**：`ubiquitous`
+- **判分逻辑**：
+  - 用户输入：`Ubiquitous` 或 `ubiquitous`（大小写均可，自动 trim 头尾空格）
+  - 判定结果：**正确**
+  - 解析展示：`ubiquitous 意为「普遍存在的，无处不在的」，契合句中 found in almost every corner of society 的语境。`
+
+##### 题型二：单项选择（Choice）
+- **题干**：`Which of the following words best describes an approach guided by practical results rather than abstract theories?`
+- **选项列表**：
+  - `A. dogmatic`
+  - `B. pragmatic`
+  - `C. ephemeral`
+  - `D. arbitrary`
+- **正确答案**：`B. pragmatic`
+- **判分逻辑**：
+  - 用户点击选项 `B. pragmatic`
+  - 判定结果：**正确**
+  - 解析展示：`pragmatic 意为「务实的，注重实际的」，与句中 practical results 形成近义对应。`
+
+##### 题型三：英译中（En to Zh）
+- **题干词汇**：`serendipity`
+- **标准答案**：`意外发现珍奇事物的本领；机缘巧合；偶然所得`
+- **判分逻辑**：
+  - 用户输入：`机缘巧合`（输入包含在服务端返回的分号/斜杠/逗号多重释义中）
+  - 判定结果：**正确**（本地智能分词容错，无需一字不差完全匹配整段长义项）
+  - 解析展示：`serendipity 指在无意中获得惊喜或珍贵发现的幸运巧合。`
+
+#### 3. 结果反馈与复盘
+作答完毕后，页面展示即时得分面板（例如 `3 / 3 (100%)`）。未掌握的单词可继续留在错词本中，等待下一轮智能混学或复习卷再次巩固，形成闭环。
+
 ## Project Introduction
 
 <https://www.bilibili.com/video/BV1QwYv6eEAS>
